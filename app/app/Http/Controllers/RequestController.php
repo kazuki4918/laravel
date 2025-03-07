@@ -46,6 +46,26 @@ class RequestController extends Controller
      */
     public function store(Request $request)
     {
+        // バリデーションルール
+        $request->validate([
+            'content' => 'required|string|max:1000',  // 依頼内容は必須、文字列、最大1000文字
+            'tel' => 'nullable|numeric|digits_between:10,15',  // 電話番号は必須、数値、10〜15桁
+            'email' => 'required|email|max:255',  // メールアドレスは必須、メール形式、最大255文字
+            'deadline' => 'nullable|date|after_or_equal:today',  // 希望納期は必須、日付、今日以降の日付
+        ], [
+            // カスタムメッセージ（日本語に変更）
+            'content.required' => '依頼内容は必須です。',
+            'content.string' => '依頼内容は文字列でなければなりません。',
+            'content.max' => '依頼内容は1000文字以内で入力してください。',
+            'tel.numeric' => '電話番号は数字でなければなりません。',
+            'tel.digits_between' => '電話番号は10〜15桁の数字でなければなりません。',
+            'email.required' => 'メールアドレスは必須です。',
+            'email.email' => '正しいメールアドレスを入力してください。',
+            'email.max' => 'メールアドレスは255文字以内で入力してください。',
+            'deadline.date' => '希望納期は日付形式で入力してください。',
+            'deadline.after_or_equal' => '希望納期は今日以降の日付で入力してください。',
+        ]);
+
         $req = new requestModel;
 
         $req->content = $request->content;
@@ -72,7 +92,7 @@ class RequestController extends Controller
             abort(403);
         }
 
-        
+
         return view('requests.show', compact('request'));
     }
 
@@ -97,10 +117,33 @@ class RequestController extends Controller
      */
     public function update(Request $request, $id)
     {
+
+        // バリデーションルール
+        $request->validate([
+            'content' => 'required|string|max:1000',  // 依頼内容は必須、文字列、最大1000文字
+            'tel' => 'nullable|numeric|digits_between:10,15',  // 電話番号は必須、数値、10〜15桁
+            'email' => 'required|email|max:255',  // メールアドレスは必須、メール形式、最大255文字
+            'deadline' => 'nullable|date|after_or_equal:today',  // 希望納期は必須、日付、今日以降の日付
+        ], [
+            // カスタムメッセージ（日本語に変更）
+            'content.required' => '依頼内容は必須です。',
+            'content.string' => '依頼内容は文字列でなければなりません。',
+            'content.max' => '依頼内容は1000文字以内で入力してください。',
+            'tel.required' => '電話番号は必須です。',
+            'tel.numeric' => '電話番号は数字でなければなりません。',
+            'tel.digits_between' => '電話番号は10〜15桁の数字でなければなりません。',
+            'email.required' => 'メールアドレスは必須です。',
+            'email.email' => '正しいメールアドレスを入力してください。',
+            'email.max' => 'メールアドレスは255文字以内で入力してください。',
+            'deadline.required' => '希望納期は必須です。',
+            'deadline.date' => '希望納期は日付形式で入力してください。',
+            'deadline.after_or_equal' => '希望納期は今日以降の日付で入力してください。',
+        ]);
+
         $req = RequestModel::find($id);
 
         $req->fill($request->all())->save();
-        
+
         return redirect()->route('requests.show', $id);
     }
 

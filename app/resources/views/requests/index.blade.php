@@ -5,7 +5,9 @@
     <div class="row justify-content-center">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header"><p class="font-weight-bold">届いた依頼一覧</p></div>
+                <div class="card-header">
+                    <h5>届いた依頼一覧</h5>
+                </div>
                 <div class="card-body">
                     <table class="table table-striped">
                         <thead>
@@ -21,7 +23,7 @@
                         <tbody>
                             @foreach($requests as $request)
                             <tr>
-                                <td>{{ $request->content }}</td>
+                                <td>{{ Str::limit($request->content, 50) }}</td>
                                 <td>{{ $request->tel }}</td>
                                 <td>{{ $request->email }}</td>
                                 <td>{{ $request->deadline }}</td>
@@ -62,7 +64,9 @@
                             @endforeach
                         </tbody>
                     </table>
-                    <a href="{{ route('profiles.show', ['profile' => Auth::user()->id]) }}" class="btn btn-secondary">戻る</a>
+                    <div class="d-flex justify-content-center">
+                        <a href="{{ route('profiles.show', ['profile' => Auth::user()->id]) }}" class="btn btn-secondary w-25">戻る</a>
+                    </div>
                 </div>
             </div>
         </div>

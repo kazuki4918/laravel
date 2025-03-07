@@ -31,41 +31,46 @@ class HomeController extends Controller
      *
      * @return \Illuminate\Contracts\Support\Renderable
      */
-    public function index(Request $request)
+    public function mainindex(Request $request)
     {
-        $post = Post::query();
 
-        //タイトル検索（部分一致）
+        if (Auth::check() && Auth::user()->del_flg == 1) {
+            Auth::logout(); // ログアウト処理
+            return redirect()->route('account.suspended');
+        }
+        
+        $posts = Post::query();
+
+        // タイトル検索（部分一致）
         if ($request->filled('keyword')) {
-            $post->where('title', 'like', '%' . $request->keyword . '%');
+            $posts->where('title', 'like', '%' . $request->keyword . '%');
         }
 
-        //下限金額フィルター
+        // 下限金額フィルター
         if ($request->filled('min_price')) {
-            $post->where('amount', '>=', $request->min_price);
+            $posts->where('amount', '>=', $request->min_price);
         }
 
-        //上限金額フィルター
+        // 上限金額フィルター
         if ($request->filled('max_price')) {
-            $post->where('amount', '<=', $request->max_price);
+            $posts->where('amount', '<=', $request->max_price);
         }
 
         $amountpulldowns = config('amountpulldown.amount');
 
-        // 検索結果を取得（無限スクロールなら get()をsimplePaginate()に変更）
-        $posts = $post->orderBy('created_at', 'desc')->take(8)->get();
+        // 検索結果を取得（無限スクロールなら simplePaginate() に変更）
+        $posts = $posts->where('del_flg', 0)->orderBy('created_at', 'desc')->simplePaginate(6);
 
         if (Auth::check() && Auth::user()->role == 1) {
             return view('controls.top');
         }
 
-
-        // 記事一覧を表示
-        return view('posts.index', [
+        return view('main', [
             'posts' => $posts,
             'amountpulldowns' => $amountpulldowns,
         ]);
     }
+
 
     public function showPost(Post $post)
     {
@@ -110,23 +115,37 @@ class HomeController extends Controller
     //　無限スクロール
     public function loadMore(Request $request)
     {
-        $post = Post::query();
-        // 検索条件を適用
+        $posts = Post::query();
+
+        // タイトル検索（部分一致）
         if ($request->filled('keyword')) {
-            $post->where('title', 'like', '%' . $request->keyword . '%');
+            $posts->where('title', 'like', '%' . $request->keyword . '%');
         }
+
+        // 下限金額フィルター
         if ($request->filled('min_price')) {
-            $post->where('amount', '>=', $request->min_price);
+            $posts->where('amount', '>=', $request->min_price);
         }
+
+        // 上限金額フィルター
         if ($request->filled('max_price')) {
-            $post->where('amount', '<=', $request->max_price);
-        } // ページネーションで次の10件を取得
-        $posts = $post->orderBy('created_at', 'desc')->paginate(5, ['*'], 'page', $request->page);
+            $posts->where('amount', '<=', $request->max_price);
+        }
+
+        // ページ数に基づいて新しい投稿を取得（ページネーション）
+        $postsPerPage = 6; // 1ページあたりの投稿数
+        $posts = $posts->where('del_flg', 0)->orderBy('created_at', 'desc')
+            ->skip(($request->page - 1) * $postsPerPage)  // page 1 なら 0、page 2 なら 6、page 3 なら 12 といった具合に取得
+            ->take($postsPerPage)
+            ->get();
+
+        // データをJSON形式で返す
+        $postsHtml = view('posts.partials.posts', compact('posts'))->render(); // 投稿用の部分ビューを作成
+
         return response()->json([
-            'posts' => view('posts.partials.posts', compact('posts'))->render(),
-            'next_page' => $posts->nextPageUrl()
+            'posts' => $postsHtml,
+            'next_page' => $posts->count() == $postsPerPage, // 次のページがあるか判定
         ]);
-        //return view('posts.partials.posts', compact('posts'))->render();
     }
 
     public function controlUser()
@@ -155,18 +174,21 @@ class HomeController extends Controller
 
     public function poststop(Post $post)
     {
-        $post->del_flg = 1;
+        // del_flg を 0 ⇄ 1 で切り替え
+        $post->del_flg = $post->del_flg == 0 ? 1 : 0;
         $post->save();
 
-        return back()->with('success', '表示停止しました');
+        return back()->with('success', $post->del_flg == 1 ? '投稿を表示停止しました' : '投稿の表示を再開しました');
     }
+
 
     public function userstop(User $user)
     {
-        $user->del_flg = 1;
+        // del_flg を 0 ⇄ 1 で切り替え
+        $user->del_flg = $user->del_flg == 0 ? 1 : 0;
         $user->save();
 
-        return back()->with('success', '利用停止しました');
+        return back()->with('success', $user->del_flg == 1 ? 'ユーザーを利用停止しました' : 'ユーザーの利用を再開しました');
     }
 
 

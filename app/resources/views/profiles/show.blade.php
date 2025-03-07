@@ -10,9 +10,8 @@
 
   <div class="card">
     <div class="card-body text-center">
-      <img src="{{ $user->image ? asset('storage/images/' . $user->image) : asset('images/default-avatar.png') }}"
+      <img src="{{ $user->image ? asset('storage/' . $user->image) : asset('images/default-avatar.png') }}"
         alt="User Image" class="rounded-circle" width="150" height="150">
-
 
       <h3 class="mt-3">{{ $user->name }}</h3>
       <p>{{ $user->email }}</p>
@@ -29,6 +28,7 @@
     </div>
   </div>
 </div>
+
 <div class="container text-center">
   <div class="row">
     <div class="col-md-6">
@@ -49,14 +49,15 @@
                 @if(isset($posts))
                 @foreach ($posts as $post)
                 <tr>
-                  <td><a href="{{ route('profiles.posts.show', $post->id) }}">{{ $post->title }}</a></td>
-                  <td>{{ $post->content }}</td>
+                  <td><a href="{{ route('profiles.posts.show', $post->id) }}" class="text-dark text-decoration-underline" style="font-weight: bold;">
+                      {{ Str::limit($post->title, 20) }}</a></td> <!-- タイトルに文字数制限 -->
+                  <td>{{ Str::limit($post->content, 20) }}</td> <!-- 依頼内容に文字数制限 -->
                   <td>
                     <div class="bl_imgContainer">
                       <img src="{{ asset('storage/' . $post->image) }}" alt="投稿用画面" width="50" height="50" style="object-fit: cover;">
                     </div>
                   </td>
-                  <td>{{ $post->amount }}</td>
+                  <td>{{ number_format($post->amount) }}</td>
                 </tr>
                 @endforeach
                 @endif
@@ -81,12 +82,12 @@
                   <th style="width: 25%;">希望納期</th>
                 </tr>
               </thead>
-              </thead>
               <tbody>
                 @if(isset($requests))
                 @foreach ($requests as $request)
                 <tr>
-                  <td><a href="{{ route('requests.show', $request->id) }}">{{ $request->content }}</a></td>
+                  <td><a href="{{ route('requests.show', $request->id) }}" class="text-dark text-decoration-underline" style="font-weight: bold;">
+                      {{ Str::limit($request->content, 20) }}</a></td> <!-- 依頼内容に文字数制限 -->
                   <td>{{ $request->tel }}</td>
                   <td>{{ $request->email }}</td>
                   <td>{{ $request->deadline }}</td>

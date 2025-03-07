@@ -56,13 +56,13 @@ class ProfileController extends Controller
     public function show(User $profile)
     {
         $user = $profile;
-        $user_id = Auth::id();   
+        $user_id = Auth::id();
         $post = new Post();
         $request = new RequestModel();
         $posts = $post->where('user_id', $user_id)->where('del_flg', 0)->get();
         $requests = $request->where('user_id', $user_id)->where('del_flg', 0)->get();
 
-        return view('profiles.show', compact('user','posts','requests'));
+        return view('profiles.show', compact('user', 'posts', 'requests'));
     }
 
     /**
@@ -86,6 +86,25 @@ class ProfileController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $request->validate([
+            'name' => 'required|string|max:255',  // 名前は必須、最大255文字
+            'email' => 'required|string|email|max:255', // メールアドレスは必須、メール形式、最大255文字
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // 画像は任意、画像ファイルのみ、最大2MB
+        ],[
+            'name.required' => '名前は必須です。',
+            'name.string' => '名前は文字列でなければなりません。',
+            'name.max' => '名前は255文字以内で入力してください。',
+            
+            'email.required' => 'メールアドレスは必須です。',
+            'email.string' => 'メールアドレスは文字列でなければなりません。',
+            'email.email' => '有効なメールアドレスを入力してください。',
+            'email.max' => 'メールアドレスは255文字以内で入力してください。',
+            
+            'image.image' => '画像ファイルをアップロードしてください。',
+            'image.mimes' => 'JPEG、PNG、JPG、GIF形式の画像ファイルのみアップロードできます。',
+            'image.max' => '画像のサイズは最大2MBまでです。',
+        ]);
+
         $user = User::findOrFail($id);
 
         $user->name = $request->name;
@@ -96,7 +115,7 @@ class ProfileController extends Controller
             if ($user->image) {
                 \Storage::disk('public')->delete($user->image);
             }
-    
+
             // 新しい画像を保存
             $path = $request->file('image')->store('images', 'public');
             $user->image = $path;
@@ -121,7 +140,7 @@ class ProfileController extends Controller
         }
         Auth::logout();
         $user->delete();
-        
+
         return redirect('/');
     }
 }

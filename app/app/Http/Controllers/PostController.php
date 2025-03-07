@@ -10,13 +10,13 @@ use App\Models\Post;
 
 class PostController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index(Request $request)
     {
+        if (Auth::check() && Auth::user()->del_flg == 1) {
+            Auth::logout(); // ログアウト処理
+            return redirect()->route('account.suspended');
+        }
+
         $post = Post::query();
 
         //タイトル検索（部分一致）
@@ -37,7 +37,7 @@ class PostController extends Controller
         $amountpulldowns = config('amountpulldown.amount');
 
         // 検索結果を取得（無限スクロールなら get()をsimplePaginate()に変更）
-        $posts = $post->orderBy('created_at', 'desc')->take(8)->get();
+        $posts = $post->where('del_flg', 0)->orderBy('created_at', 'desc')->take(6)->get();
 
         if (Auth::check() && Auth::user()->role == 1) {
             return view('controls.top');
@@ -51,23 +51,12 @@ class PostController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
         // 投稿画面表示
         return view('posts/create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -75,13 +64,28 @@ class PostController extends Controller
             'content' => 'required|string',        // 内容は必須
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // 画像は任意、画像ファイルのみ、最大2MB
             'amount' => 'required|numeric|min:1',  // 金額は必須、1以上の数値
+        ], [
+            'title.required' => 'タイトルは必須です。',
+            'title.string' => 'タイトルは文字列でなければなりません。',
+            'title.max' => 'タイトルは50文字以内で入力してください。',
+
+            'content.required' => '内容は必須です。',
+            'content.string' => '内容は文字列でなければなりません。',
+
+            'image.image' => '画像ファイルをアップロードしてください。',
+            'image.mimes' => '画像はJPEG、PNG、JPG、GIFのいずれかの形式である必要があります。',
+            'image.max' => '画像のサイズは最大2MBまでです。',
+
+            'amount.required' => '金額は必須です。',
+            'amount.numeric' => '金額は数字でなければなりません。',
+            'amount.min' => '金額は1以上の数値である必要があります。',
         ]);
 
         $post = new Post;
         $post->title = $request->title;
         $post->content = $request->content;
         $post->amount = $request->amount;
-        $post->user_id = Auth::id(); 
+        $post->user_id = Auth::id();
 
         if ($request->hasFile('image')) {
             $post->image = $request->file('image')->store('images', 'public');
@@ -89,15 +93,9 @@ class PostController extends Controller
 
         $post->save();
 
-        return redirect('/');
+        return redirect()->route('posts.index');
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function show(Post $post)
     {
         //$post = Post::findOrFail($post);
@@ -105,12 +103,6 @@ class PostController extends Controller
         return view('posts.show', ['post' => $post]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function edit($id)
     {
         $post = Post::find($id);
@@ -118,35 +110,54 @@ class PostController extends Controller
         return view('posts.edit', ['post' => $post]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function update(Request $request, Int $id)
     {
         $request->validate([
-            'title' => 'required|string|max:255',  // タイトルは必須、最大255文字
+            'title' => 'required|string|max:50',  // タイトルは必須、最大50文字
             'content' => 'required|string',        // 内容は必須
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // 画像は任意、画像ファイルのみ、最大2MB
             'amount' => 'required|numeric|min:1',  // 金額は必須、1以上の数値
+        ], [
+            'title.required' => 'タイトルは必須です。',
+            'title.string' => 'タイトルは文字列でなければなりません。',
+            'title.max' => 'タイトルは50文字以内で入力してください。',
+
+            'content.required' => '内容は必須です。',
+            'content.string' => '内容は文字列でなければなりません。',
+
+            'image.image' => '画像ファイルをアップロードしてください。',
+            'image.mimes' => '画像はJPEG、PNG、JPG、GIFのいずれかの形式である必要があります。',
+            'image.max' => '画像のサイズは最大2MBまでです。',
+
+            'amount.required' => '金額は必須です。',
+            'amount.numeric' => '金額は数字でなければなりません。',
+            'amount.min' => '金額は1以上の数値である必要があります。',
         ]);
 
-        $post = Post::find($id);
+        $post = Post::findOrFail($id);
 
-        $post->fill($request->all())->save();
+        // 画像アップロード処理
+        if ($request->hasFile('image')) {
+            // 既存の画像がある場合は削除
+            if ($post->image) {
+                \Storage::disk('public')->delete($post->image);
+            }
 
-        return redirect()->route('profiles.posts.show', $id);
+            // 新しい画像を保存
+            $imagePath = $request->file('image')->store('images', 'public');
+            $post->image = $imagePath;
+        }
+
+        // その他のフィールドを更新
+        $post->title = $request->title;
+        $post->content = $request->content;
+        $post->amount = $request->amount;
+
+        $post->save();
+
+        return redirect()->route('profiles.posts.show', $id)->with('success', '投稿を更新しました');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function destroy(Int $id)
     {
         $post = Post::find($id);

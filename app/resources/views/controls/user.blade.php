@@ -5,13 +5,15 @@
     <div class="row justify-content-center">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header"><p class="font-weight-bold">ユーザーリスト</p></div>
+                <div class="card-header">
+                    <h5>ユーザーリスト</h5>
+                </div>
                 <div class="card-body">
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>ユーザー名</th>
-                                <th>投稿表示停止数</th>
+                                <th style="width: 40%;">ユーザー名</th>
+                                <th style="width: 40%;">投稿表示停止数</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -20,17 +22,29 @@
                                 <td>{{ $user->name }}</td>
                                 <td>{{ $user->post_count }}</td>
                                 <td>
+                                    @if ($user->del_flg == 0)
+                                    <!-- 利用停止ボタン -->
                                     <form action="{{ route('user.stop', $user->id) }}" method="POST" class="d-inline"
-                                        onsubmit="return confirm('利用停止にしますか？');">
+                                        onsubmit="return confirm('このユーザーを利用停止にしますか？');">
                                         @csrf
-                                        <button type="submit" class="btn btn-danger">ユーザー利用停止</button>
+                                        <button type="submit" class="btn btn-danger">利用停止</button>
                                     </form>
+                                    @else
+                                    <!-- 解除ボタン -->
+                                    <form action="{{ route('user.stop', $user->id) }}" method="POST" class="d-inline"
+                                        onsubmit="return confirm('このユーザーの利用を再開しますか？');">
+                                        @csrf
+                                        <button type="submit" class="btn btn-success">解除</button>
+                                    </form>
+                                    @endif
                                 </td>
                             </tr>
                             @endforeach
                         </tbody>
                     </table>
-                    <a href="" class="btn btn-secondary">戻る</a>
+                    <div class="d-flex justify-content-center">
+                        <a href="{{ route('posts.index') }}" class="btn btn-secondary w-25">戻る</a>
+                    </div>
                 </div>
             </div>
         </div>
