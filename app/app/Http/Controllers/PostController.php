@@ -17,27 +17,27 @@ class PostController extends Controller
             return redirect()->route('account.suspended');
         }
 
-        $post = Post::query();
+        $query = Post::where('del_flg', 0)->orderBy('created_at', 'desc');
 
         //タイトル検索（部分一致）
         if ($request->filled('keyword')) {
-            $post->where('title', 'like', '%' . $request->keyword . '%');
+            $query->where('title', 'like', '%' . $request->keyword . '%');
         }
 
         //下限金額フィルター
         if ($request->filled('min_price')) {
-            $post->where('amount', '>=', $request->min_price);
+            $query->where('amount', '>=', $request->min_price);
         }
 
         //上限金額フィルター
         if ($request->filled('max_price')) {
-            $post->where('amount', '<=', $request->max_price);
+            $query->where('amount', '<=', $request->max_price);
         }
 
         $amountpulldowns = config('amountpulldown.amount');
 
         // 検索結果を取得（無限スクロールなら get()をsimplePaginate()に変更）
-        $posts = $post->where('del_flg', 0)->orderBy('created_at', 'desc')->take(6)->get();
+        $posts = $query->paginate(8, ['*'], 'page', $request->page ?? 1);
 
         if (Auth::check() && Auth::user()->role == 1) {
             return view('controls.top');
@@ -167,5 +167,32 @@ class PostController extends Controller
         $user_id = Auth::id();
 
         return redirect()->route('profiles.show', $user_id);
+    }
+
+    public function loadMore(Request $request)
+    {
+        $query = Post::where('del_flg', 0)->orderBy('created_at', 'desc');
+
+        // 検索条件を適用
+        if ($request->filled('keyword')) {
+            $query->where('title', 'like', '%' . $request->keyword . '%');
+        }
+        if ($request->filled('min_price')) {
+            $query->where('amount', '>=', $request->min_price);
+        }
+        if ($request->filled('max_price')) {
+            $query->where('amount', '<=', $request->max_price);
+        }
+
+        // `page` パラメータを適用する（デフォルトは1ページ目）
+        $posts = $query->paginate(8, ['*'], 'page', $request->page);
+
+        // 部分ビューを取得
+        $view = view('posts.partials.posts', compact('posts'))->render();
+
+        return response()->json([
+            'posts' => $view,
+            'next_page' => $posts->nextPageUrl() ? true : false,
+        ]);
     }
 }

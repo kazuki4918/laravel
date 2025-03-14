@@ -36,8 +36,8 @@ Route::post('/logout', function () {
 })->name('logout');
 
 
-
-Route::get('/posts/load', [HomeController::class, 'loadMore'])->name('posts.load');
+Route::get('/posts/load-more', [PostController::class, 'loadMore'])->name('posts.loadMore');
+//Route::get('/posts/load', [PostController::class, 'loadMore'])->name('posts.load');
 Route::get('/posts/index', [PostController::class, 'index'])->name('posts.index');
 Route::get('/posts/{post}/show', [PostController::class, 'show'])->name('posts.show');
 
