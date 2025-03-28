@@ -93,7 +93,7 @@
         <nav class="navbar navbar-custom d-flex justify-content-between">
             <div class="d-flex align-items-center">
                 <a class="navbar-brand navbar-logo" href="{{ route('posts.index') }}">
-                    <i class="fab fa-youtube"></i> Laravel
+                    <i class="fab fa-youtube"></i> Sukimachi
                 </a>
             </div>
 
@@ -101,6 +101,7 @@
             <div class="user-menu">
                 @guest
                 <a href="{{ route('login') }}" class="btn btn-outline-primary">ログイン</a>
+                <a href="{{ route('register') }}" class="btn btn-outline-success">会員登録</a>
                 @else
                 <i class="fas fa-bell"></i> <!-- 通知アイコン -->
                 <i class="fas fa-upload"></i> <!-- アップロードアイコン -->
@@ -108,7 +109,7 @@
                 <div class="dropdown">
                     <a class="dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <img src="{{ Auth::user()->image ? asset('storage/' . Auth::user()->image) : asset('images/default-avatar.png') }}"
-                            alt="User Avatar" class="profile-pic">
+                            alt="アイコンを設定しよう　" class="profile-pic">
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="{{ route('profiles.show', ['profile' => Auth::user()->id]) }}">マイページ</a></li>
